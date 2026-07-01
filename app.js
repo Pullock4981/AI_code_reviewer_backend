@@ -6,6 +6,9 @@ app.use(cors());
 app.use(express.json({ limit: "5mb" }));
 
 // Routes
+app.get("/", (req, res) => {
+  res.status(200).json({ success: true, message: "AI Code Reviewer API is running on Vercel 🚀" });
+});
 app.use("/health",    require("./src/routes/health.routes"));
 app.use("/api/v1",    require("./src/routes/index"));
 
