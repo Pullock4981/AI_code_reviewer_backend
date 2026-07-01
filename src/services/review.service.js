@@ -147,6 +147,7 @@ const processGithubRepoReview = async (body) => {
     
   } catch (err) {
     console.error("Failed to generate unified repo summary:", err.message);
+    throw new Error(`Failed to generate review: ${err.message}`);
   }
 
   // Populate results array with just file names (no reviewId/verdict needed anymore)
