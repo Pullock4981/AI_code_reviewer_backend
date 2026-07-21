@@ -16,7 +16,21 @@ const strictnessGuide = {
   STRICT:   "Be thorough. Flag every issue including minor style, naming, and potential improvements.",
 };
 
+const frameworkGuide = {
+  "react": "FRAMEWORK RULES (React): Check for Rules of Hooks, infinite re-renders (e.g. missing dependency arrays), proper use of state/context, missing 'key' props in iterators, and component modularity.",
+  "typescript": "FRAMEWORK RULES (TypeScript): Check for strict type definitions. Penalize the use of 'any'. Enforce interfaces/types instead of implicit typing. Check for null/undefined handling.",
+  "typescript-react": "FRAMEWORK RULES (React + TypeScript): Check for Rules of Hooks, missing 'key' props, and proper state management. Enforce strict typing for component props and state. Penalize 'any'."
+};
+
+const getFrameworkRules = (lang) => {
+  if (!lang) return "";
+  const l = lang.toLowerCase();
+  return frameworkGuide[l] || "";
+};
+
 const build = ({ code, language, studentLevel, reviewDepth, strictnessLevel, focusAreas, assignmentContext, customInstructions }) => {
+  const frameworkRules = getFrameworkRules(language);
+  
   const systemPrompt = `You are an expert code reviewer helping a technical instructor review student code.
 Your reviews are structured, specific, and pedagogically appropriate.
 
@@ -28,6 +42,8 @@ Guidance: ${depthGuide[reviewDepth]}
 
 STRICTNESS: ${strictnessLevel}
 Guidance: ${strictnessGuide[strictnessLevel]}
+
+${frameworkRules ? `${frameworkRules}` : ""}
 
 ${focusAreas && focusAreas.length > 0 ? `FOCUS AREAS: Pay special attention to: ${focusAreas.join(", ")}` : ""}
 
@@ -68,6 +84,15 @@ Return ONLY the JSON. Nothing else.`;
 };
 
 const buildBatch = ({ files, studentLevel, reviewDepth, strictnessLevel, focusAreas, assignmentContext, customInstructions }) => {
+  // If ANY file is react/typescript, apply the rule globally for the batch
+  let batchFrameworkRules = "";
+  if (files.some(f => f.language === 'typescript-react' || f.language === 'react')) {
+    batchFrameworkRules += frameworkGuide["react"] + " ";
+  }
+  if (files.some(f => f.language === 'typescript-react' || f.language === 'typescript')) {
+    batchFrameworkRules += frameworkGuide["typescript"] + " ";
+  }
+
   const systemPrompt = `You are an expert code reviewer helping a technical instructor review student code.
 Your reviews are structured, specific, and pedagogically appropriate.
 
@@ -79,6 +104,8 @@ Guidance: ${depthGuide[reviewDepth]}
 
 STRICTNESS: ${strictnessLevel}
 Guidance: ${strictnessGuide[strictnessLevel]}
+
+${batchFrameworkRules.trim() ? `${batchFrameworkRules.trim()}` : ""}
 
 ${focusAreas && focusAreas.length > 0 ? `FOCUS AREAS: Pay special attention to: ${focusAreas.join(", ")}` : ""}
 
@@ -125,12 +152,21 @@ Return ONLY the JSON. Nothing else.`;
 };
 
 const buildUnifiedRepoPrompt = ({ filesText, commitCount, studentLevel, reviewDepth, strictnessLevel, focusAreas, assignmentContext, customInstructions }) => {
+  // We can assume TS/React rules if they exist in the repo
+  let isReact = filesText.includes("import React") || filesText.includes("useState");
+  let isTS = filesText.includes("interface ") || filesText.includes("type ");
+  
+  let repoRules = "";
+  if (isReact) repoRules += frameworkGuide["react"] + " ";
+  if (isTS) repoRules += frameworkGuide["typescript"] + " ";
+
   const systemPrompt = `You are a Senior Software Architect reviewing a GitHub repository.
 You will evaluate the ENTIRE repository code provided.
 
 STUDENT LEVEL: ${studentLevel}
 REVIEW DEPTH: ${reviewDepth}
 STRICTNESS: ${strictnessLevel}
+${repoRules.trim() ? `${repoRules.trim()}` : ""}
 ${focusAreas && focusAreas.length > 0 ? `FOCUS AREAS: ${focusAreas.join(", ")}` : ""}
 ${assignmentContext ? `ASSIGNMENT CONTEXT: ${assignmentContext}` : ""}
 ${customInstructions ? `CUSTOM INSTRUCTIONS: ${customInstructions}` : ""}

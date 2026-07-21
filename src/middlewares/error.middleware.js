@@ -19,7 +19,8 @@ const errorHandler = (err, req, res, next) => {
     return res.status(503).json(error(err.message, "AI_PROVIDER_ERROR"));
   }
 
-  res.status(500).json(error("Something went wrong", "SERVER_ERROR"));
+  console.error("Global Error:", err);
+  res.status(500).json(error(err.message || "Something went wrong", "SERVER_ERROR"));
 };
 
 module.exports = errorHandler;

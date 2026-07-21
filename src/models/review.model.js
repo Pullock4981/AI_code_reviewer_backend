@@ -21,7 +21,7 @@ const reviewSchema = new mongoose.Schema(
     // Input
     code:             { type: String, required: true },
     language:         { type: String, default: "unknown" },
-    inputMethod:      { type: String, enum: ["PASTE","FILE","GITHUB_FILE","GITHUB_REPO"], default: "PASTE" },
+    inputMethod:      { type: String, enum: ["PASTE","FILE","GITHUB_FILE","GITHUB_REPO","UI_URL"], default: "PASTE" },
 
     // Parameters
     studentLevel:     { type: String, enum: ["BEGINNER","INTERMEDIATE","ADVANCED"], required: true },

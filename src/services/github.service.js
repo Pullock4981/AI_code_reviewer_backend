@@ -1,6 +1,6 @@
 const axios = require("axios");
 
-const SUPPORTED_EXTENSIONS = ["js","ts","py","java","cs","cpp","c","html","css","php","rb","go","rs","kt","swift","sql"];
+const SUPPORTED_EXTENSIONS = ["js","jsx","ts","tsx","py","java","cs","cpp","c","html","css","php","rb","go","rs","kt","swift","sql"];
 
 // GitHub raw file URL theke code fetch kore
 const fetchFile = async (githubUrl, accessToken = null) => {
@@ -10,8 +10,15 @@ const fetchFile = async (githubUrl, accessToken = null) => {
     .replace("/blob/", "/");
 
   const headers = accessToken ? { Authorization: `token ${accessToken}` } : {};
-  const response = await axios.get(rawUrl, { headers, timeout: 15000 });
-  return response.data;
+  try {
+    const response = await axios.get(rawUrl, { headers, timeout: 15000 });
+    return response.data;
+  } catch (err) {
+    if (err.response && err.response.status === 404) {
+      throw new Error("File not found. If the repository is private, please provide a valid GitHub Access Token.");
+    }
+    throw new Error(`Failed to fetch file: ${err.message}`);
+  }
 };
 
 // Repo er sob supported file list kore
@@ -26,10 +33,18 @@ const listRepoFiles = async (repoUrl, accessToken = null, maxFiles = 20) => {
     ...(accessToken && { Authorization: `token ${accessToken}` }),
   };
 
-  const treeRes = await axios.get(
-    `https://api.github.com/repos/${owner}/${repo}/git/trees/HEAD?recursive=1`,
-    { headers, timeout: 20000 }
-  );
+  let treeRes;
+  try {
+    treeRes = await axios.get(
+      `https://api.github.com/repos/${owner}/${repo}/git/trees/HEAD?recursive=1`,
+      { headers, timeout: 20000 }
+    );
+  } catch (err) {
+    if (err.response && err.response.status === 404) {
+      throw new Error("Repository not found. If it is private, please provide a valid GitHub Access Token.");
+    }
+    throw new Error(`Failed to fetch repository: ${err.message}`);
+  }
 
   const allFiles = treeRes.data.tree.filter((f) => {
     if (f.type !== "blob") return false;

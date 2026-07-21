@@ -1,4 +1,5 @@
 const reviewService = require("../services/review.service");
+const uiReviewService = require("../services/ui-review.service");
 const { success, error } = require("../utils/responseHelper");
 
 // POST /api/v1/reviews
@@ -31,6 +32,16 @@ const reviewGithubRepo = async (req, res, next) => {
   }
 };
 
+// POST /api/v1/reviews/ui
+const reviewUI = async (req, res, next) => {
+  try {
+    const result = await uiReviewService.processUIReview(req.body);
+    res.status(201).json(success(result, "UI review completed"));
+  } catch (err) {
+    next(err);
+  }
+};
+
 // GET /api/v1/reviews/:id
 const getReview = async (req, res, next) => {
   try {
@@ -41,4 +52,4 @@ const getReview = async (req, res, next) => {
   }
 };
 
-module.exports = { createReview, reviewGithubFile, reviewGithubRepo, getReview };
+module.exports = { createReview, reviewGithubFile, reviewGithubRepo, reviewUI, getReview };

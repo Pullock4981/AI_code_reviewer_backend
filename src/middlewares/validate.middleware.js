@@ -17,15 +17,20 @@ const reviewSchema = z.object({
 });
 
 const githubFileSchema = z.object({
-  githubUrl:        z.string().url().includes("github.com"),
+  githubUrl:        z.string().includes("github.com"),
   accessToken:      z.string().optional(),
   reviewParameters: reviewParamsSchema,
 });
 
 const githubRepoSchema = z.object({
-  repositoryUrl:    z.string().url().includes("github.com"),
+  repositoryUrl:    z.string().includes("github.com"),
   accessToken:      z.string().optional(),
   maxFiles:         z.number().max(30).optional(),
+  reviewParameters: reviewParamsSchema,
+});
+
+const uiReviewSchema = z.object({
+  liveUrl:          z.string().url(),
   reviewParameters: reviewParamsSchema,
 });
 
@@ -52,4 +57,5 @@ module.exports = {
   validateReview:       validate(reviewSchema),
   validateGithubFile:   validate(githubFileSchema),
   validateGithubRepo:   validate(githubRepoSchema),
+  validateUIReview:     validate(uiReviewSchema),
 };
