@@ -1,4 +1,4 @@
-const puppeteer = require("puppeteer");
+// puppeteer imported dynamically inside processUIReview
 const Review = require("../models/review.model");
 const aiProvider = require("./ai/aiProvider");
 
@@ -60,6 +60,7 @@ const processUIReview = async (body) => {
   let browser;
   let screenshotBase64;
   try {
+    const puppeteer = (await import("puppeteer")).default;
     browser = await puppeteer.launch({
       headless: "new",
       args: ['--no-sandbox', '--disable-setuid-sandbox']
