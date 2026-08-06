@@ -13,7 +13,7 @@ const detect = (code = "", filename = "") => {
   if (extMap[ext]) return extMap[ext];
 
   // Detect from code content
-  if (/<html|<!DOCTYPE/i.test(code))     return "html";
+  if (/<html|<!DOCTYPE/i.test(code)) return "html";
   if (/^\s*body\s*\{|margin:|padding:/m.test(code)) return "css";
   if (/(import React|useState|useEffect|useContext|className=|return\s*\(\s*<)/.test(code)) {
     if (/interface |type |:[ a-zA-Z<>]+(=|;|,|\))/.test(code)) return "typescript-react";
