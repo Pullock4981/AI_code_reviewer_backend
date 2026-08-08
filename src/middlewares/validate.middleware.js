@@ -6,8 +6,8 @@ const reviewParamsSchema = z.object({
   reviewDepth:      z.enum(["QUICK", "STANDARD", "DETAILED"]),
   strictnessLevel:  z.enum(["LENIENT", "STANDARD", "STRICT"]).optional(),
   focusAreas:       z.array(z.string()).max(5).optional(),
-  assignmentContext:z.string().max(2000).optional(),
-  customInstructions: z.string().max(1000).optional(),
+  assignmentContext:z.string().max(10000).optional(),
+  customInstructions: z.string().max(10000).optional(),
 });
 
 const reviewSchema = z.object({
@@ -47,6 +47,7 @@ const validate = (schema) => (req, res, next) => {
       field: e.path.join("."),
       issue: e.message,
     }));
+    console.error("❌ VALIDATION FAILED:", JSON.stringify(details, null, 2));
     return res.status(422).json(error("Validation failed", "VALIDATION_ERROR", details));
   }
   req.body = flattenParams(result.data);
