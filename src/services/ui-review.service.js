@@ -32,9 +32,30 @@ Return ONLY the JSON. Nothing else.`;
 
 const parseAIResponse = (raw) => {
   try {
-    const cleaned = raw.replace(/```json|```/g, "").trim();
+    if (!raw) throw new Error("Empty response from AI");
+    
+    let cleaned = raw.trim();
+    
+    // Find the first { or [ and the last } or ]
+    const firstBrace = cleaned.indexOf('{');
+    const firstBracket = cleaned.indexOf('[');
+    let startIdx = firstBrace;
+    if (firstBrace === -1) startIdx = firstBracket;
+    else if (firstBracket !== -1 && firstBracket < firstBrace) startIdx = firstBracket;
+    
+    const lastBrace = cleaned.lastIndexOf('}');
+    const lastBracket = cleaned.lastIndexOf(']');
+    let endIdx = lastBrace;
+    if (lastBrace === -1) endIdx = lastBracket;
+    else if (lastBracket !== -1 && lastBracket > lastBrace) endIdx = lastBracket;
+    
+    if (startIdx !== -1 && endIdx !== -1 && endIdx >= startIdx) {
+      cleaned = cleaned.substring(startIdx, endIdx + 1);
+    }
+    
     return JSON.parse(cleaned);
-  } catch {
+  } catch (err) {
+    console.error("❌ UI Review AI returned invalid JSON. Raw output was:", raw);
     throw new Error("AI returned invalid JSON. Please try again.");
   }
 };
