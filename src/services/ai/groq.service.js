@@ -10,7 +10,7 @@ const complete = async ({ systemPrompt, userPrompt }) => {
       { role: "system", content: systemPrompt },
       { role: "user",   content: Array.isArray(userPrompt) ? userPrompt[0] : userPrompt },
     ],
-    temperature: 0.3,
+    temperature: 0.0,
     response_format: { type: "json_object" },
   });
   return response.choices[0].message.content;
