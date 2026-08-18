@@ -65,7 +65,7 @@ CRITICAL OUTPUT RULES:
 
 {
   "summary": "A precise instructor-style short summary of the code.",
-  "examinerFeedback": "Markdown string formatted as an Examiner's Feedback checklist. CRITICAL: You MUST read the CUSTOM INSTRUCTIONS. If the user provided a list of requirements or points, you MUST evaluate the code STRICTLY against those exact points. Keep the exact section headers and numbering provided by the user. For each point, append ' - okay।' if the code satisfies it, or ' - needs improvement।' if it fails.",
+  "examinerFeedback": "Markdown string formatted as an Examiner's Feedback checklist. CRITICAL: You MUST evaluate the code STRICTLY against those exact points. Keep the exact section headers and numbering provided by the user. For each point, you MUST append ' - okay।' if the code satisfies it (even partially, >=50% match), or ' - needs improvement।' if it fails. DO NOT add any extra notes, parentheses, or explanations after the okay/needs improvement mark.",
   "overallVerdict": {
     "label": "EXCELLENT|GOOD|NEEDS_WORK|REDO",
     "score": 75,
@@ -132,7 +132,7 @@ CRITICAL OUTPUT RULES:
       "file": "path/to/file",
       "review": {
         "summary": "A precise instructor-style short summary of the code.",
-        "examinerFeedback": "Markdown string formatted as an Examiner's Feedback checklist. CRITICAL: You MUST read the CUSTOM INSTRUCTIONS. If the user provided a list of requirements or points, you MUST evaluate the code STRICTLY against those exact points. Keep the exact section headers and numbering provided by the user. For each point, append ' - okay।' if the code satisfies it, or ' - needs improvement।' if it fails.",
+        "examinerFeedback": "Markdown string formatted as an Examiner's Feedback checklist. CRITICAL: You MUST evaluate the code STRICTLY against those exact points. Keep the exact section headers and numbering provided by the user. For each point, you MUST append ' - okay।' if the code satisfies it (even partially, >=50% match), or ' - needs improvement।' if it fails. DO NOT add any extra notes, parentheses, or explanations after the okay/needs improvement mark.",
         "overallVerdict": {
           "label": "EXCELLENT|GOOD|NEEDS_WORK|REDO",
           "score": 75,
@@ -151,7 +151,7 @@ Return ONLY the JSON. Nothing else.`;
   return { systemPrompt, userPrompt };
 };
 
-const buildUnifiedRepoPrompt = ({ filesText, commitCount, studentLevel, reviewDepth, strictnessLevel, focusAreas, assignmentContext, customInstructions }) => {
+const buildUnifiedRepoPrompt = ({ filesText, commitCount, hasScreenshot, studentLevel, reviewDepth, strictnessLevel, focusAreas, assignmentContext, customInstructions }) => {
   // We can assume TS/React rules if they exist in the repo
   let isReact = filesText.includes("import React") || filesText.includes("useState");
   let isTS = filesText.includes("interface ") || filesText.includes("type ");
@@ -160,8 +160,8 @@ const buildUnifiedRepoPrompt = ({ filesText, commitCount, studentLevel, reviewDe
   if (isReact) repoRules += frameworkGuide["react"] + " ";
   if (isTS) repoRules += frameworkGuide["typescript"] + " ";
 
-  const systemPrompt = `You are a Senior Software Architect reviewing a GitHub repository.
-You will evaluate the ENTIRE repository code provided.
+  const systemPrompt = `You are a Senior Software Architect and UI/UX Expert reviewing a GitHub repository.
+You will evaluate the ENTIRE repository code provided${hasScreenshot ? " AND the provided screenshot of the live deployed website" : ""}.
 
 STUDENT LEVEL: ${studentLevel}
 REVIEW DEPTH: ${reviewDepth}
@@ -173,6 +173,7 @@ ${customInstructions ? `CUSTOM INSTRUCTIONS: ${customInstructions}` : ""}
 
 REPOSITORY METADATA:
 - Total Commits in GitHub: ${commitCount}
+${hasScreenshot ? "- UI Screenshot: Attached" : ""}
 
 CRITICAL OUTPUT RULES:
 1. Respond ONLY with a valid JSON object — no text before or after
@@ -184,10 +185,10 @@ CRITICAL OUTPUT RULES:
 
 ${filesText}
 
-Based on this code and the REPOSITORY METADATA, generate an overall repository review in JSON format with EXACTLY this structure:
+Based on this code${hasScreenshot ? ", the attached UI screenshot," : ""} and the REPOSITORY METADATA, generate an overall repository review in JSON format with EXACTLY this structure:
 {
-  "summary": "Overall 2-3 sentence summary of the repository's code quality",
-  "examinerFeedback": "Markdown string formatted as an Examiner's Feedback checklist. CRITICAL: You MUST read the CUSTOM INSTRUCTIONS. If the user provided a list of requirements or points, you MUST evaluate the ENTIRE REPOSITORY STRICTLY against those exact points. Keep the exact section headers and numbering provided by the user. If any point asks to check GitHub commits (e.g. 'Minimum 5 GitHub Commits'), you MUST use the REPOSITORY METADATA commit count (${commitCount}) to determine if it passes. For each point, append ' - okay।' if the repository satisfies it, or ' - needs improvement।' if it fails.",
+  "summary": "Overall 2-3 sentence summary of the repository's code quality${hasScreenshot ? " and UI design" : ""}",
+  "examinerFeedback": "Markdown string formatted as an Examiner's Feedback checklist. CRITICAL: You MUST evaluate the ENTIRE REPOSITORY${hasScreenshot ? " AND UI SCREENSHOT" : ""} STRICTLY against those exact points. Keep the exact section headers and numbering provided by the user. If any point asks to check GitHub commits (e.g. 'Minimum 5 GitHub Commits'), you MUST use the REPOSITORY METADATA commit count (${commitCount}) to determine if it passes. ${hasScreenshot ? "CRITICAL: If a UI component's code is missing from the provided files BUT it is clearly visible in the attached screenshot, you MUST assume it is implemented and pass it. " : ""}For each point, you MUST append ' - okay।' if it satisfies the requirement (even partially, >=50% match), or ' - needs improvement।' if it fails. DO NOT add any extra notes, parentheses, or explanations after the okay/needs improvement mark.",
   "overallVerdict": {
     "label": "EXCELLENT|GOOD|NEEDS_WORK|REDO",
     "score": 85,

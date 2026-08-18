@@ -15,7 +15,7 @@ CRITICAL OUTPUT RULES:
 
 {
   "summary": "A precise short summary of the UI design and layout.",
-  "examinerFeedback": "Markdown string formatted as an Examiner's Feedback checklist. CRITICAL: You MUST evaluate the UI STRICTLY against the custom instructions. For each point, append ' - okay।' if the UI satisfies it, or ' - needs improvement।' if it fails.",
+  "examinerFeedback": "Markdown string formatted as an Examiner's Feedback checklist. CRITICAL: You MUST evaluate the UI STRICTLY against the custom instructions. For each point, you MUST append ' - okay।' if the UI satisfies it (even partially, >=50% match), or ' - needs improvement।' if it fails. DO NOT add any extra notes, parentheses, or explanations after the okay/needs improvement mark.",
   "overallVerdict": {
     "label": "EXCELLENT|GOOD|NEEDS_WORK|REDO",
     "score": 85,

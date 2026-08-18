@@ -40,17 +40,36 @@ const listRepoFiles = async (repoUrl, accessToken = null, maxFiles = 20) => {
       { headers, timeout: 20000 }
     );
   } catch (err) {
-    if (err.response && err.response.status === 404) {
-      throw new Error("Repository not found. If it is private, please provide a valid GitHub Access Token.");
+    if (err.response) {
+      if (err.response.status === 404) {
+        throw new Error("Repository not found. If it is private, please provide a valid GitHub Access Token.");
+      }
+      if (err.response.status === 403) {
+        throw new Error("GitHub API Rate Limit exceeded (60 requests/hr). Please generate a personal access token and paste it in the 'Access Token' box to continue.");
+      }
     }
     throw new Error(`Failed to fetch repository: ${err.message}`);
   }
 
-  const allFiles = treeRes.data.tree.filter((f) => {
+  let allFiles = treeRes.data.tree.filter((f) => {
     if (f.type !== "blob") return false;
     const ext = f.path.split(".").pop().toLowerCase();
     return SUPPORTED_EXTENSIONS.includes(ext);
   });
+
+  // Prioritize source files over config/build files
+  const priorityScore = (path) => {
+    const lowerPath = path.toLowerCase();
+    if (lowerPath.includes("src/") || lowerPath.includes("components/") || lowerPath.includes("pages/") || lowerPath.includes("app/") || lowerPath.includes("lib/")) {
+      return 2;
+    }
+    if (lowerPath.includes("config") || lowerPath.includes(".json") || lowerPath.includes("eslint") || lowerPath.includes("vite")) {
+      return 0; // lowest priority
+    }
+    return 1;
+  };
+
+  allFiles.sort((a, b) => priorityScore(b.path) - priorityScore(a.path));
 
   // Max file limit
   return allFiles.slice(0, maxFiles).map((f) => ({

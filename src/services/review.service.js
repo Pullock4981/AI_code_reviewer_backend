@@ -104,7 +104,7 @@ const processGithubFileReview = async (body) => {
 
 // ─── GitHub full repo review ──────────────────────────────────────────────────
 const processGithubRepoReview = async (body) => {
-  const { repositoryUrl, accessToken, maxFiles = 20, ...params } = body;
+  const { repositoryUrl, liveUrl, accessToken, maxFiles = 20, ...params } = body;
 
   const filesMeta = await githubService.listRepoFiles(repositoryUrl, accessToken, maxFiles);
   if (filesMeta.length === 0) throw new Error("No supported source files found in repository");
@@ -112,30 +112,57 @@ const processGithubRepoReview = async (body) => {
   const axios = require("axios");
   const results = [];
   
-  // Download files in parallel to save time
-  const downloadPromises = filesMeta.map(async (file) => {
-    try {
-      const code = await axios.get(file.rawUrl, { timeout: 10000 }).then((r) => r.data);
-      const language = detect(code, file.path);
-      return { path: file.path, code, language };
-    } catch (err) {
-      results.push({ file: file.path, error: "Failed to download file: " + err.message });
-      return null;
-    }
-  });
-  
-  const downloadedFiles = (await Promise.all(downloadPromises)).filter(Boolean);
+  // 1. Setup GitHub Files Download Promise (SKIPPED FOR LIGHTNING FAST MODE)
+  // We only send the file structure to the AI, not the full code.
+  const downloadPromises = Promise.resolve(filesMeta.map((file) => ({
+    path: file.path,
+    code: "// [Code content intentionally skipped. Evaluate based on file structure and UI only.]",
+    language: detect("", file.path)
+  })));
 
-  const commitCount = await githubService.getRepoCommitCount(repositoryUrl, accessToken);
+  // 2. Setup Commit Count Promise
+  const commitCountPromise = githubService.getRepoCommitCount(repositoryUrl, accessToken);
   
+  // 3. Setup Puppeteer Screenshot Promise
+  const screenshotPromise = (async () => {
+    if (!liveUrl) return null;
+    let browser;
+    try {
+      const puppeteer = (await import("puppeteer")).default;
+      browser = await puppeteer.launch({
+        headless: "new",
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
+      const page = await browser.newPage();
+      await page.setViewport({ width: 1280, height: 2000 });
+      // Use 'load' instead of 'networkidle2' to significantly reduce wait time
+      await page.goto(liveUrl, { waitUntil: "load", timeout: 15000 });
+      return await page.screenshot({ encoding: "base64", type: "jpeg", quality: 60 });
+    } catch (error) {
+      console.error(`Failed to capture screenshot from ${liveUrl}: ${error.message}`);
+      return null;
+    } finally {
+      if (browser) await browser.close();
+    }
+  })();
+
+  // Execute all three independent tasks concurrently!
+  const [downloadedRaw, commitCount, screenshotBase64] = await Promise.all([
+    downloadPromises,
+    commitCountPromise,
+    screenshotPromise
+  ]);
+
+  const downloadedFiles = downloadedRaw.filter(Boolean);
   const filesText = downloadedFiles.map(f => `--- FILE: ${f.path} ---\n\`\`\`${f.language}\n${f.code}\n\`\`\``).join('\n\n');
-  
+
   let repoSummary = null;
   let reviewDoc = null;
   try {
-    const prompt = promptService.buildUnifiedRepoPrompt({
+    const textPromptObj = promptService.buildUnifiedRepoPrompt({
       filesText,
       commitCount,
+      hasScreenshot: !!screenshotBase64,
       studentLevel: params.studentLevel,
       reviewDepth: params.reviewDepth,
       strictnessLevel: params.strictnessLevel,
@@ -143,13 +170,30 @@ const processGithubRepoReview = async (body) => {
       assignmentContext: params.assignmentContext,
       customInstructions: params.customInstructions
     });
-    const aiRaw = await aiProvider.complete(prompt);
+    
+    let promptData;
+    if (screenshotBase64) {
+      const imagePart = {
+        inlineData: {
+          data: screenshotBase64,
+          mimeType: "image/jpeg"
+        }
+      };
+      promptData = {
+        systemPrompt: textPromptObj.systemPrompt,
+        userPrompt: [textPromptObj.userPrompt, imagePart]
+      };
+    } else {
+      promptData = textPromptObj;
+    }
+
+    const aiRaw = await aiProvider.complete(promptData);
     let parsedSummary = parseAIResponse(aiRaw);
     repoSummary = adjustScoreBasedOnFeedback(parsedSummary);
     
     // Save a single unified review document for history
     reviewDoc = await Review.create({
-      code: "GITHUB_REPO: " + repositoryUrl,
+      code: "GITHUB_REPO: " + repositoryUrl + (liveUrl ? ` | LIVE: ${liveUrl}` : ""),
       language: "multi",
       inputMethod: "GITHUB_REPO",
       studentLevel: params.studentLevel,

@@ -24,6 +24,7 @@ const githubFileSchema = z.object({
 
 const githubRepoSchema = z.object({
   repositoryUrl:    z.string().includes("github.com"),
+  liveUrl:          z.string().url().optional(),
   accessToken:      z.string().optional(),
   maxFiles:         z.number().max(30).optional(),
   reviewParameters: reviewParamsSchema,

@@ -8,7 +8,7 @@ const complete = async ({ systemPrompt, userPrompt }) => {
     model: GROQ_MODEL || "llama3-70b-8192",
     messages: [
       { role: "system", content: systemPrompt },
-      { role: "user",   content: userPrompt },
+      { role: "user",   content: Array.isArray(userPrompt) ? userPrompt[0] : userPrompt },
     ],
     temperature: 0.3,
     response_format: { type: "json_object" },
