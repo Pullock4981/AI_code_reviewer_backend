@@ -31,6 +31,21 @@ This is the backend service for the AI Code Reviewer application. It provides RE
    ```bash
    cp .env.example .env
    ```
+   # Gemini AI Configuration
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-2.5-flash
+GEMINI_FALLBACK_MODEL=gemini-flash-latest
+
+# Groq AI Configuration
+GROQ_API_KEY=your_groq_api_key_here
+GROQ_MODEL=llama-3.1-8b-instant
+
+# Active AI Provider (e.g., groq or gemini)
+AI_PROVIDER=groq
+
+# MongoDB Configuration
+MONGO_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/<database_name>?retryWrites=true&w=majority
+
 
 3. **Start the Server:**
    ```bash
