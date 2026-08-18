@@ -104,7 +104,7 @@ const processGithubFileReview = async (body) => {
 
 // ─── GitHub full repo review ──────────────────────────────────────────────────
 const processGithubRepoReview = async (body) => {
-  const { repositoryUrl, liveUrl, accessToken, maxFiles = 20, ...params } = body;
+  const { repositoryUrl, liveUrl, accessToken, maxFiles = 150, ...params } = body;
 
   const filesMeta = await githubService.listRepoFiles(repositoryUrl, accessToken, maxFiles);
   if (filesMeta.length === 0) throw new Error("No supported source files found in repository");

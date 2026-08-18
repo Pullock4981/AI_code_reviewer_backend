@@ -22,7 +22,7 @@ const fetchFile = async (githubUrl, accessToken = null) => {
 };
 
 // Repo er sob supported file list kore
-const listRepoFiles = async (repoUrl, accessToken = null, maxFiles = 20) => {
+const listRepoFiles = async (repoUrl, accessToken = null, maxFiles = 150) => {
   // Parse owner/repo from URL: https://github.com/owner/repo
   const match = repoUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
   if (!match) throw new Error("Invalid GitHub repository URL");
