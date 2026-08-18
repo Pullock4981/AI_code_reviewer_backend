@@ -13,7 +13,7 @@ const getProvider = () => {
   return provider;
 };
 
-const logger = require("../../utils/logger"); // Restarting server to load llama-3.1-8b-instant
+const logger = require("../../utils/logger"); // Restarting server to load gemini-3.5-flash
 
 const complete = async (prompt) => {
   const provider = getProvider();
