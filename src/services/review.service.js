@@ -112,13 +112,17 @@ const processGithubRepoReview = async (body) => {
   const axios = require("axios");
   const results = [];
   
-  // 1. Setup GitHub Files Download Promise (SKIPPED FOR LIGHTNING FAST MODE)
-  // We only send the file structure to the AI to save time and tokens.
-  const downloadPromises = Promise.resolve(filesMeta.map((file) => ({
-    path: file.path,
-    code: "// [Code content intentionally skipped for speed. Evaluate based on file structure and UI only.]",
-    language: detect("", file.path)
-  })));
+  // 1. Setup GitHub Files Download Promise (Lightweight check for top core files)
+  const downloadPromises = Promise.all(filesMeta.map(async (file) => {
+    try {
+      const code = await axios.get(file.rawUrl, { timeout: 10000 }).then((r) => r.data);
+      const language = detect(code, file.path);
+      return { path: file.path, code, language };
+    } catch (err) {
+      results.push({ file: file.path, error: "Failed to download file: " + err.message });
+      return null;
+    }
+  }));
 
   // 2. Setup Commit Count Promise
   const commitCountPromise = githubService.getRepoCommitCount(repositoryUrl, accessToken);

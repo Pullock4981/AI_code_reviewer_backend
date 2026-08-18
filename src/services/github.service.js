@@ -22,7 +22,7 @@ const fetchFile = async (githubUrl, accessToken = null) => {
 };
 
 // Repo er sob supported file list kore
-const listRepoFiles = async (repoUrl, accessToken = null, maxFiles = 150) => {
+const listRepoFiles = async (repoUrl, accessToken = null, maxFiles = 30) => {
   // Parse owner/repo from URL: https://github.com/owner/repo
   const match = repoUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
   if (!match) throw new Error("Invalid GitHub repository URL");
@@ -60,16 +60,34 @@ const listRepoFiles = async (repoUrl, accessToken = null, maxFiles = 150) => {
   // Prioritize source files over config/build files
   const priorityScore = (path) => {
     const lowerPath = path.toLowerCase();
-    if (lowerPath.includes("src/") || lowerPath.includes("components/") || lowerPath.includes("pages/") || lowerPath.includes("app/") || lowerPath.includes("lib/")) {
+    
+    // Ignore configs, tests, styling, or package files for light review
+    if (lowerPath.includes("package-lock") || lowerPath.includes(".css") || lowerPath.includes(".svg") || lowerPath.includes(".test") || lowerPath.includes("eslint") || lowerPath.includes("config")) {
+      return -1; 
+    }
+    
+    // Highest priority to actual pages and components
+    if (lowerPath.includes("pages/") || lowerPath.includes("app/") || lowerPath.includes("components/")) {
+      return 3;
+    }
+    
+    // High priority to hooks, context, controllers, routes
+    if (lowerPath.includes("hooks/") || lowerPath.includes("context/") || lowerPath.includes("controllers/") || lowerPath.includes("routes/")) {
       return 2;
     }
-    if (lowerPath.includes("config") || lowerPath.includes(".json") || lowerPath.includes("eslint") || lowerPath.includes("vite")) {
-      return 0; // lowest priority
+    
+    // Medium priority to any src/ folder
+    if (lowerPath.includes("src/")) {
+      return 1;
     }
-    return 1;
+    
+    return 0;
   };
 
   allFiles.sort((a, b) => priorityScore(b.path) - priorityScore(a.path));
+  
+  // Filter out the negative priorities if possible, then limit to maxFiles
+  allFiles = allFiles.filter(f => priorityScore(f.path) >= 0);
 
   // Max file limit
   return allFiles.slice(0, maxFiles).map((f) => ({
