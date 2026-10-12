@@ -18,14 +18,14 @@ const reviewSchema = z.object({
 
 const githubFileSchema = z.object({
   githubUrl:        z.string().includes("github.com"),
-  accessToken:      z.string().optional(),
+  accessToken:      z.string().optional().or(z.literal("")),
   reviewParameters: reviewParamsSchema,
 });
 
 const githubRepoSchema = z.object({
   repositoryUrl:    z.string().includes("github.com"),
-  liveUrl:          z.string().url().optional(),
-  accessToken:      z.string().optional(),
+  liveUrl:          z.string().url().optional().or(z.literal("")),
+  accessToken:      z.string().optional().or(z.literal("")),
   maxFiles:         z.number().max(30).optional(),
   reviewParameters: reviewParamsSchema,
 });

@@ -8,6 +8,5 @@ module.exports = {
   GEMINI_FALLBACK_MODEL: process.env.GEMINI_FALLBACK_MODEL || "gemini-2.0-flash",
   GROQ_API_KEY:   process.env.GROQ_API_KEY,
   GROQ_MODEL:     process.env.GROQ_MODEL || "llama3-70b-8192",
-  API_AUTH_KEY:   process.env.API_AUTH_KEY,
   AI_PROVIDER:    process.env.AI_PROVIDER || "groq",
 };
